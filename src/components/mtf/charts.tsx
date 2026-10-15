@@ -8,8 +8,6 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  Pie,
-  PieChart,
   ReferenceLine,
   XAxis,
   YAxis,
@@ -21,7 +19,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Sparkles, Clock, Flame, CalendarDays } from "lucide-react";
+import { Sparkles, Clock, Flame, CalendarDays, TrendingUp } from "lucide-react";
 import {
   formatIDR,
   formatIDRShort,
@@ -37,101 +35,47 @@ const GREEN_DEEP = "oklch(0.65 0.2 150)";
 const RED = "oklch(0.68 0.22 22)";
 const GRID = "oklch(0.78 0.18 155 / 0.18)";
 
-const barConfig = { net: { label: "Bersih", color: GREEN } } satisfies ChartConfig;
 const areaConfig = { cum: { label: "Kumulatif", color: GREEN } } satisfies ChartConfig;
-const pieConfig = { invested: { label: "Modal", color: GREEN } } satisfies ChartConfig;
 
 function ChartShell({
   title,
   icon: Icon,
+  right,
   children,
 }: {
   title: string;
   icon: React.ComponentType<{ className?: string }>;
+  right?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <div className="glass rounded-2xl p-4">
-      <div className="mb-2 flex items-center gap-1.5">
-        <Icon className="h-3.5 w-3.5 text-emerald-300" />
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-zinc-300">
-          {title}
-        </h3>
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <Icon className="h-3.5 w-3.5 text-emerald-300" />
+          <h3 className="text-[11px] font-semibold uppercase tracking-widest text-zinc-300">
+            {title}
+          </h3>
+        </div>
+        {right}
       </div>
       {children}
     </div>
   );
 }
 
-function Empty({ text }: { text: string }) {
+function Empty({ text, h = 160 }: { text: string; h?: number }) {
   return (
-    <div className="flex h-[180px] w-full items-center justify-center text-xs text-zinc-500">
+    <div
+      className="flex w-full items-center justify-center text-xs text-zinc-500"
+      style={{ height: h }}
+    >
       {text}
     </div>
   );
 }
 
-/* ===== Bar: net per account ===== */
-export function BarChartAccounts({
-  accounts,
-  loading,
-}: {
-  accounts: AccountSummary[];
-  loading: boolean;
-}) {
-  const data = useMemo(
-    () =>
-      accounts.map((a) => ({
-        name: a.name.length > 10 ? a.name.slice(0, 9) + "…" : a.name,
-        net: Number(a.net_profit || 0),
-      })),
-    [accounts]
-  );
-  return (
-    <ChartShell title="Bersih per Akun" icon={CalendarDays}>
-      {loading ? (
-        <Skeleton className="h-[180px] w-full bg-white/10" />
-      ) : data.length === 0 ? (
-        <Empty text="Belum ada akun" />
-      ) : (
-        <ChartContainer config={barConfig} className="h-[180px] w-full">
-          <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -8 }}>
-            <CartesianGrid vertical={false} stroke={GRID} strokeDasharray="3 3" />
-            <XAxis
-              dataKey="name"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              interval={0}
-              tick={{ fontSize: 10, fill: "oklch(0.7 0.02 150)" }}
-            />
-            <YAxis
-              tickFormatter={(v) => formatIDRShort(Number(v))}
-              tickLine={false}
-              axisLine={false}
-              width={52}
-              tick={{ fontSize: 9, fill: "oklch(0.7 0.02 150)" }}
-            />
-            <ReferenceLine y={0} stroke="oklch(0.5 0.02 150)" />
-            <ChartTooltip
-              cursor={{ fill: "oklch(0.78 0.18 155 / 0.1)" }}
-              content={
-                <ChartTooltipContent formatter={(v) => formatIDR(Number(v))} />
-              }
-            />
-            <Bar dataKey="net" radius={[6, 6, 6, 6]} maxBarSize={42}>
-              {data.map((d, i) => (
-                <Cell key={i} fill={d.net >= 0 ? GREEN : RED} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ChartContainer>
-      )}
-    </ChartShell>
-  );
-}
-
-/* ===== Area: cumulative net ===== */
+/* ===== Area: cumulative net (journey recap) ===== */
 export function AreaChartTimeline({
   transactions,
   loading,
@@ -155,7 +99,15 @@ export function AreaChartTimeline({
   }, [transactions]);
 
   return (
-    <ChartShell title="Pertumbuhan Kumulatif" icon={Sparkles}>
+    <ChartShell
+      title="Perjalanan Profit"
+      icon={TrendingUp}
+      right={
+        <span className="num-mono text-xs text-zinc-400">
+          {transactions.length} titik
+        </span>
+      }
+    >
       {loading ? (
         <Skeleton className="h-[180px] w-full bg-white/10" />
       ) : data.length === 0 ? (
@@ -207,82 +159,110 @@ export function AreaChartTimeline({
   );
 }
 
-/* ===== Donut: investment distribution ===== */
-const PIE_COLORS = [
-  "oklch(0.78 0.18 155)",
-  "oklch(0.7 0.16 162)",
-  "oklch(0.85 0.13 168)",
-  "oklch(0.65 0.2 150)",
-  "oklch(0.72 0.15 158)",
-  "oklch(0.68 0.17 160)",
-];
-
-export function DonutInvestment({
+/* ===== Combined: Ringkasan Akun (replaces Donut + Bar) =====
+   Per-account horizontal stacked bar: invested (rose) + profit (emerald),
+   with net badge. Shows distribution AND per-account net in ONE compact card. */
+export function AccountOverview({
   accounts,
   loading,
 }: {
   accounts: AccountSummary[];
   loading: boolean;
 }) {
-  const data = useMemo(
+  const rows = useMemo(
     () =>
-      accounts
-        .filter((a) => Number(a.total_invested || 0) > 0)
-        .map((a) => ({ name: a.name, value: Number(a.total_invested || 0) })),
+      accounts.map((a) => ({
+        id: a.account_id,
+        name: a.name,
+        invested: Number(a.total_invested || 0),
+        profit: Number(a.total_profit || 0),
+        net: Number(a.net_profit || 0),
+      })),
     [accounts]
   );
-  const total = data.reduce((s, d) => s + d.value, 0);
+  const totalInvested = rows.reduce((s, r) => s + r.invested, 0);
+  const totalProfit = rows.reduce((s, r) => s + r.profit, 0);
+  const totalNet = totalProfit - totalInvested;
+  const maxBar = Math.max(1, ...rows.map((r) => r.invested + r.profit));
 
   return (
-    <ChartShell title="Distribusi Modal" icon={CalendarDays}>
+    <ChartShell
+      title="Ringkasan Akun"
+      icon={CalendarDays}
+      right={
+        rows.length > 0 ? (
+          <span
+            className={cn(
+              "num-mono text-xs font-medium",
+              totalNet >= 0 ? "text-emerald-300" : "text-rose-300"
+            )}
+          >
+            {totalNet >= 0 ? "+" : ""}
+            {formatIDRShort(totalNet)}
+          </span>
+        ) : null
+      }
+    >
       {loading ? (
         <Skeleton className="h-[180px] w-full bg-white/10" />
-      ) : data.length === 0 ? (
-        <Empty text="Belum ada investasi" />
+      ) : rows.length === 0 ? (
+        <Empty text="Belum ada akun" />
       ) : (
-        <div className="flex flex-col items-center gap-3 sm:flex-row">
-          <ChartContainer config={pieConfig} className="h-[160px] w-[160px]">
-            <PieChart>
-              <ChartTooltip
-                content={
-                  <ChartTooltipContent
-                    formatter={(v) => formatIDR(Number(v))}
-                  />
-                }
-              />
-              <Pie
-                data={data}
-                dataKey="value"
-                nameKey="name"
-                innerRadius={42}
-                outerRadius={68}
-                paddingAngle={2}
-                strokeWidth={2}
-              >
-                {data.map((_, i) => (
-                  <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                ))}
-              </Pie>
-            </PieChart>
-          </ChartContainer>
-          <div className="flex-1 w-full max-h-[160px] overflow-y-auto scroll-soft pr-1 space-y-1.5">
-            {data.map((d, i) => (
-              <div
-                key={d.name}
-                className="flex items-center justify-between gap-2 text-xs"
-              >
-                <span className="flex items-center gap-2 min-w-0">
-                  <span
-                    className="h-2 w-2 shrink-0 rounded-full"
-                    style={{ background: PIE_COLORS[i % PIE_COLORS.length] }}
-                  />
-                  <span className="truncate text-zinc-200">{d.name}</span>
+        <div className="space-y-2.5">
+          {rows.map((r) => {
+            const positive = r.net >= 0;
+            const investW = (r.invested / maxBar) * 100;
+            const profitW = (r.profit / maxBar) * 100;
+            return (
+              <div key={r.id} className="flex items-center gap-2.5">
+                <span className="w-20 shrink-0 truncate text-xs text-zinc-300">
+                  {r.name}
                 </span>
-                <span className="num-mono font-medium text-zinc-400 shrink-0">
-                  {total > 0 ? Math.round((d.value / total) * 100) : 0}%
+                <div className="flex h-5 flex-1 overflow-hidden rounded-md bg-white/5">
+                  {r.invested > 0 && (
+                    <div
+                      className="bg-rose-400/40"
+                      style={{ width: `${investW}%` }}
+                      title={`Modal ${formatIDR(r.invested)}`}
+                    />
+                  )}
+                  {r.profit > 0 && (
+                    <div
+                      className="bg-emerald-400/70"
+                      style={{ width: `${profitW}%` }}
+                      title={`Profit ${formatIDR(r.profit)}`}
+                    />
+                  )}
+                </div>
+                <span
+                  className={cn(
+                    "num-mono w-16 shrink-0 text-right text-xs font-medium",
+                    positive ? "text-emerald-300" : "text-rose-300"
+                  )}
+                >
+                  {positive ? "+" : ""}
+                  {formatIDRShort(r.net)}
                 </span>
               </div>
-            ))}
+            );
+          })}
+
+          {/* totals */}
+          <div className="mt-3 flex items-center justify-between border-t border-white/10 pt-2.5 text-[11px]">
+            <span className="text-zinc-500">
+              {formatIDRShort(totalInvested)} modal · {formatIDRShort(totalProfit)}{" "}
+              profit
+            </span>
+            <span className="flex items-center gap-3 text-[9px] text-zinc-500">
+              <span className="flex items-center gap-1">
+                <span className="h-2 w-2 rounded-[2px] bg-rose-400/40" />
+                modal
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="h-2 w-2 rounded-[2px] bg-emerald-400/70" />
+                profit
+              </span>
+            </span>
           </div>
         </div>
       )}
@@ -290,7 +270,7 @@ export function DonutInvestment({
   );
 }
 
-/* ===== PATTERNS: prime badges + day bar + hour bar + heatmap ===== */
+/* ===== PATTERNS: prime badges ===== */
 function PrimeBadge({
   label,
   value,
@@ -356,15 +336,17 @@ export function PatternPrimeBadges({ patterns }: { patterns: Patterns | null }) 
 }
 
 const dayConfig = { net: { label: "Bersih", color: GREEN } } satisfies ChartConfig;
+const hourConfig = { net: { label: "Bersih", color: GREEN } } satisfies ChartConfig;
 
-export function PatternByDay({
+/* ===== Combined: Pola Hari & Jam (replaces separate day + hour charts) ===== */
+export function PatternDayHour({
   patterns,
   loading,
 }: {
   patterns: Patterns | null;
   loading: boolean;
 }) {
-  const data = useMemo(
+  const dayData = useMemo(
     () =>
       (patterns?.byDay ?? []).map((d) => ({
         name: DAY_NAMES[d.day_index],
@@ -373,60 +355,7 @@ export function PatternByDay({
       })),
     [patterns]
   );
-  return (
-    <ChartShell title="Pola per Hari" icon={CalendarDays}>
-      {loading ? (
-        <Skeleton className="h-[180px] w-full bg-white/10" />
-      ) : data.every((d) => d.count === 0) ? (
-        <Empty text="Belum ada pola" />
-      ) : (
-        <ChartContainer config={dayConfig} className="h-[180px] w-full">
-          <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -8 }}>
-            <CartesianGrid vertical={false} stroke={GRID} strokeDasharray="3 3" />
-            <XAxis
-              dataKey="name"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              interval={0}
-              tick={{ fontSize: 10, fill: "oklch(0.7 0.02 150)" }}
-            />
-            <YAxis
-              tickFormatter={(v) => formatIDRShort(Number(v))}
-              tickLine={false}
-              axisLine={false}
-              width={52}
-              tick={{ fontSize: 9, fill: "oklch(0.7 0.02 150)" }}
-            />
-            <ReferenceLine y={0} stroke="oklch(0.5 0.02 150)" />
-            <ChartTooltip
-              cursor={{ fill: "oklch(0.78 0.18 155 / 0.1)" }}
-              content={
-                <ChartTooltipContent formatter={(v) => formatIDR(Number(v))} />
-              }
-            />
-            <Bar dataKey="net" radius={[6, 6, 6, 6]} maxBarSize={36}>
-              {data.map((d, i) => (
-                <Cell key={i} fill={d.net >= 0 ? GREEN : RED} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ChartContainer>
-      )}
-    </ChartShell>
-  );
-}
-
-const hourConfig = { net: { label: "Bersih", color: GREEN } } satisfies ChartConfig;
-
-export function PatternByHour({
-  patterns,
-  loading,
-}: {
-  patterns: Patterns | null;
-  loading: boolean;
-}) {
-  const data = useMemo(
+  const hourData = useMemo(
     () =>
       (patterns?.byHour ?? []).map((h) => ({
         hour: h.hour,
@@ -436,53 +365,101 @@ export function PatternByHour({
       })),
     [patterns]
   );
+
+  const noDay = dayData.every((d) => d.count === 0);
+  const noHour = hourData.every((d) => d.count === 0);
+
   return (
-    <ChartShell title="Pola per Jam" icon={Clock}>
+    <ChartShell title="Pola Hari & Jam" icon={Clock}>
       {loading ? (
         <Skeleton className="h-[180px] w-full bg-white/10" />
-      ) : data.every((d) => d.count === 0) ? (
+      ) : noDay && noHour ? (
         <Empty text="Belum ada pola" />
       ) : (
-        <ChartContainer config={hourConfig} className="h-[180px] w-full">
-          <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -8 }}>
-            <CartesianGrid vertical={false} stroke={GRID} strokeDasharray="3 3" />
-            <XAxis
-              dataKey="label"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={6}
-              interval={0}
-              tick={{ fontSize: 8, fill: "oklch(0.7 0.02 150)" }}
-            />
-            <YAxis
-              tickFormatter={(v) => formatIDRShort(Number(v))}
-              tickLine={false}
-              axisLine={false}
-              width={52}
-              tick={{ fontSize: 9, fill: "oklch(0.7 0.02 150)" }}
-            />
-            <ReferenceLine y={0} stroke="oklch(0.5 0.02 150)" />
-            <ChartTooltip
-              cursor={{ fill: "oklch(0.78 0.18 155 / 0.1)" }}
-              content={
-                <ChartTooltipContent
-                  formatter={(v) => formatIDR(Number(v))}
+        <div className="grid gap-4 sm:grid-cols-2">
+          {/* day mini chart */}
+          <div>
+            <p className="mb-1 text-[9px] uppercase tracking-widest text-zinc-500">
+              per Hari
+            </p>
+            <ChartContainer config={dayConfig} className="h-[140px] w-full">
+              <BarChart data={dayData} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
+                <CartesianGrid vertical={false} stroke={GRID} strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="name"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={6}
+                  interval={0}
+                  tick={{ fontSize: 9, fill: "oklch(0.7 0.02 150)" }}
                 />
-              }
-            />
-            <Bar dataKey="net" radius={[3, 3, 3, 3]} maxBarSize={14}>
-              {data.map((d, i) => (
-                <Cell key={i} fill={d.net >= 0 ? GREEN : RED} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ChartContainer>
+                <YAxis
+                  tickFormatter={(v) => formatIDRShort(Number(v))}
+                  tickLine={false}
+                  axisLine={false}
+                  width={42}
+                  tick={{ fontSize: 8, fill: "oklch(0.7 0.02 150)" }}
+                />
+                <ReferenceLine y={0} stroke="oklch(0.5 0.02 150)" />
+                <ChartTooltip
+                  cursor={{ fill: "oklch(0.78 0.18 155 / 0.1)" }}
+                  content={
+                    <ChartTooltipContent formatter={(v) => formatIDR(Number(v))} />
+                  }
+                />
+                <Bar dataKey="net" radius={[4, 4, 4, 4]} maxBarSize={28}>
+                  {dayData.map((d, i) => (
+                    <Cell key={i} fill={d.net >= 0 ? GREEN : RED} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ChartContainer>
+          </div>
+          {/* hour mini chart */}
+          <div>
+            <p className="mb-1 text-[9px] uppercase tracking-widest text-zinc-500">
+              per Jam
+            </p>
+            <ChartContainer config={hourConfig} className="h-[140px] w-full">
+              <BarChart data={hourData} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
+                <CartesianGrid vertical={false} stroke={GRID} strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="label"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={4}
+                  interval={0}
+                  tick={{ fontSize: 7, fill: "oklch(0.7 0.02 150)" }}
+                />
+                <YAxis
+                  tickFormatter={(v) => formatIDRShort(Number(v))}
+                  tickLine={false}
+                  axisLine={false}
+                  width={42}
+                  tick={{ fontSize: 8, fill: "oklch(0.7 0.02 150)" }}
+                />
+                <ReferenceLine y={0} stroke="oklch(0.5 0.02 150)" />
+                <ChartTooltip
+                  cursor={{ fill: "oklch(0.78 0.18 155 / 0.1)" }}
+                  content={
+                    <ChartTooltipContent formatter={(v) => formatIDR(Number(v))} />
+                  }
+                />
+                <Bar dataKey="net" radius={[3, 3, 3, 3]} maxBarSize={10}>
+                  {hourData.map((d, i) => (
+                    <Cell key={i} fill={d.net >= 0 ? GREEN : RED} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ChartContainer>
+          </div>
+        </div>
       )}
     </ChartShell>
   );
 }
 
-/* ===== Heatmap: day x hour-bucket ===== */
+/* ===== Heatmap (kept standalone) ===== */
 export function PatternHeatmap({
   patterns,
   loading,
@@ -490,7 +467,6 @@ export function PatternHeatmap({
   patterns: Patterns | null;
   loading: boolean;
 }) {
-  // bucket hours into 6 groups of 4: 0-3,4-7,8-11,12-15,16-19,20-23
   const BUCKETS = [
     { label: "00-03", start: 0, end: 3 },
     { label: "04-07", start: 4, end: 7 },
@@ -530,7 +506,6 @@ export function PatternHeatmap({
       ) : (
         <div className="overflow-x-auto scroll-soft">
           <div className="min-w-[320px]">
-            {/* header row */}
             <div className="grid grid-cols-[28px_repeat(6,1fr)] gap-1 mb-1">
               <span />
               {BUCKETS.map((b) => (
@@ -542,7 +517,6 @@ export function PatternHeatmap({
                 </span>
               ))}
             </div>
-            {/* rows */}
             {DAY_NAMES.map((day, dIdx) => (
               <div
                 key={day}
@@ -558,7 +532,6 @@ export function PatternHeatmap({
                   const count = cell?.count ?? 0;
                   const intensity = Math.min(1, Math.abs(net) / maxAbs);
                   const positive = net >= 0;
-                  // opacity 0.1 -> 0.7
                   const alpha = count === 0 ? 0 : 0.12 + intensity * 0.58;
                   const bg =
                     count === 0
@@ -586,7 +559,6 @@ export function PatternHeatmap({
                 })}
               </div>
             ))}
-            {/* legend */}
             <div className="mt-3 flex items-center justify-end gap-3 text-[9px] text-zinc-500">
               <span className="flex items-center gap-1">
                 <span

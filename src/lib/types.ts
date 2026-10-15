@@ -41,6 +41,9 @@ export interface DashboardStats {
   netProfit: number;
   accountCount: number;
   txCount: number;
+  profitCount: number;
+  investCount: number;
+  winRate: number;
   bestAccountId: string | null;
   bestAccountName: string | null;
   bestAccountProfit: number;

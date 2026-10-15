@@ -1,16 +1,14 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Plus, RefreshCw, Clock, Sparkles } from "lucide-react";
+import { Plus, RefreshCw, Clock, TrendingUp, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SummaryCards } from "@/components/mtf/summary-cards";
 import {
   AreaChartTimeline,
-  BarChartAccounts,
-  DonutInvestment,
-  PatternByDay,
-  PatternByHour,
+  AccountOverview,
+  PatternDayHour,
   PatternHeatmap,
   PatternPrimeBadges,
   type TimelineTx,
@@ -27,6 +25,7 @@ import type {
   Patterns,
   Transaction,
 } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 export default function Home() {
   const [addOpen, setAddOpen] = useState(false);
@@ -84,14 +83,21 @@ export default function Home() {
   const patterns = patternsQ.data ?? null;
   const loading = statsQ.loading || accountsQ.loading;
 
+  const isProfit = stats ? stats.netProfit >= 0 : true;
+  const winRate = stats?.winRate ?? 0;
+
   return (
     <div className="relative min-h-screen bg-tech-grid">
       {/* ===== Header ===== */}
       <header className="sticky top-0 z-30 border-b border-white/10 bg-background/70 backdrop-blur-xl">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-2.5">
-            <span className="glow grid h-9 w-9 place-items-center rounded-xl bg-emerald-500 text-emerald-950">
-              <Sparkles className="h-5 w-5" />
+            <span className="glow grid h-9 w-9 place-items-center overflow-hidden rounded-xl bg-emerald-500/10">
+              <img
+                src="/icons/icon-192.png"
+                alt="My Trade Finance"
+                className="h-8 w-8 object-contain"
+              />
             </span>
             <div className="leading-tight">
               <h1 className="text-base font-bold tracking-tight text-zinc-50 sm:text-lg">
@@ -123,26 +129,61 @@ export default function Home() {
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-5 sm:px-6 sm:py-7">
         {/* ===== Hero ===== */}
         <section className="glass anime-sheen relative mb-5 overflow-hidden rounded-2xl glow">
-          <div className="relative flex items-center gap-4 p-5 sm:p-6">
-            <div className="min-w-0 flex-1">
-              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-emerald-300">
-                <Sparkles className="h-3 w-3" /> Profit Bersih
-              </span>
-              <h2 className="num-mono mt-2 text-3xl font-bold leading-tight text-glow sm:text-4xl">
-                <span className={stats && stats.netProfit >= 0 ? "text-emerald-300" : "text-rose-300"}>
-                  {stats
-                    ? `${stats.netProfit >= 0 ? "+" : ""}${new Intl.NumberFormat(
-                        "id-ID",
-                        { style: "currency", currency: "IDR", maximumFractionDigits: 0 }
-                      ).format(stats.netProfit)}`
-                    : "···"}
+          <div className="relative p-5 sm:p-6">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-emerald-300">
+                  <TrendingUp className="h-3 w-3" /> Profit Bersih
                 </span>
-              </h2>
-              <p className="mt-1 text-xs text-zinc-400">
-                {accounts.length > 0
-                  ? `${accounts.length} akun · ${stats?.txCount ?? 0} transaksi`
-                  : "Tambahkan akun pertamamu"}
-              </p>
+                <h2 className="num-mono mt-2 text-3xl font-bold leading-tight text-glow sm:text-4xl">
+                  <span className={isProfit ? "text-emerald-300" : "text-rose-300"}>
+                    {stats
+                      ? `${stats.netProfit >= 0 ? "+" : ""}${new Intl.NumberFormat(
+                          "id-ID",
+                          {
+                            style: "currency",
+                            currency: "IDR",
+                            maximumFractionDigits: 0,
+                          }
+                        ).format(stats.netProfit)}`
+                      : "···"}
+                  </span>
+                </h2>
+                <p className="mt-1 text-xs text-zinc-400">
+                  {accounts.length > 0
+                    ? `${accounts.length} akun · ${stats?.txCount ?? 0} transaksi`
+                    : "Tambahkan akun pertamamu"}
+                </p>
+              </div>
+
+              {/* UNTUNG / MERUGI status badge */}
+              {stats && stats.txCount > 0 && (
+                <div
+                  className={cn(
+                    "flex flex-col items-center gap-0.5 rounded-2xl border px-4 py-2.5",
+                    isProfit
+                      ? "border-emerald-400/40 bg-emerald-400/10"
+                      : "border-rose-400/40 bg-rose-400/10"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "flex items-center gap-1 text-sm font-bold uppercase tracking-widest",
+                      isProfit ? "text-emerald-300 text-glow" : "text-rose-300 text-glow"
+                    )}
+                  >
+                    {isProfit ? (
+                      <TrendingUp className="h-4 w-4" />
+                    ) : (
+                      <TrendingDown className="h-4 w-4" />
+                    )}
+                    {isProfit ? "Untung" : "Merugi"}
+                  </span>
+                  <span className="num-mono text-[11px] text-zinc-400">
+                    {Math.round(winRate)}% win
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -152,18 +193,20 @@ export default function Home() {
           <SummaryCards stats={stats ?? null} loading={loading} />
         </section>
 
-        {/* ===== Charts ===== */}
-        <section className="mb-6 grid gap-4 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            <AreaChartTimeline transactions={transactions} loading={timelineQ.loading} />
-          </div>
-          <DonutInvestment accounts={accounts} loading={accountsQ.loading} />
-        </section>
-        <section className="mb-7">
-          <BarChartAccounts accounts={accounts} loading={accountsQ.loading} />
+        {/* ===== Perjalanan profit (journey) ===== */}
+        <section className="mb-5">
+          <AreaChartTimeline
+            transactions={transactions}
+            loading={timelineQ.loading}
+          />
         </section>
 
-        {/* ===== POLA WAKTU (new) ===== */}
+        {/* ===== Combined Ringkasan Akun (replaces donut + bar) ===== */}
+        <section className="mb-6">
+          <AccountOverview accounts={accounts} loading={accountsQ.loading} />
+        </section>
+
+        {/* ===== POLA WAKTU ===== */}
         <section className="mb-7">
           <div className="mb-3 flex items-center gap-2">
             <Clock className="h-4 w-4 text-emerald-300" />
@@ -173,10 +216,7 @@ export default function Home() {
           </div>
           <div className="space-y-4">
             <PatternPrimeBadges patterns={patterns} />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <PatternByDay patterns={patterns} loading={patternsQ.loading} />
-              <PatternByHour patterns={patterns} loading={patternsQ.loading} />
-            </div>
+            <PatternDayHour patterns={patterns} loading={patternsQ.loading} />
             <PatternHeatmap patterns={patterns} loading={patternsQ.loading} />
           </div>
         </section>
@@ -216,9 +256,12 @@ export default function Home() {
       <footer className="mt-auto border-t border-white/10 bg-background/70 backdrop-blur-xl pb-safe">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-2 px-4 py-3 text-xs text-zinc-500 sm:px-6">
           <p>
-            <span className="font-semibold text-emerald-400">TradeFinance</span> · PWA · Supabase
+            <span className="font-semibold text-emerald-400">TradeFinance</span>
           </p>
-          <p className="num-mono">{new Date().getFullYear()} · v2.0</p>
+          <p>
+            Developed by{" "}
+            <span className="font-semibold text-zinc-300">Syamsul Huda</span>
+          </p>
         </div>
       </footer>
 
