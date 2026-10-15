@@ -127,12 +127,49 @@ export default function Home() {
       </header>
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-5 sm:px-6 sm:py-7">
-        {/* ===== Hero ===== */}
-        <section className="glass anime-sheen relative mb-5 overflow-hidden rounded-2xl glow">
+        {/* ===== Hero (card turns green on Profit / red on Loss) ===== */}
+        <section
+          className={cn(
+            "glass relative mb-5 overflow-hidden rounded-2xl border",
+            !stats || stats.txCount === 0
+              ? "border-emerald-400/20"
+              : isProfit
+              ? "border-emerald-400/50"
+              : "border-rose-400/50"
+          )}
+          style={{
+            boxShadow:
+              stats && stats.txCount > 0
+                ? isProfit
+                  ? "0 0 40px -6px oklch(0.78 0.18 155 / 0.45)"
+                  : "0 0 40px -6px oklch(0.68 0.22 22 / 0.45)"
+                : undefined,
+          }}
+        >
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                stats && stats.txCount > 0
+                  ? isProfit
+                    ? "radial-gradient(120% 120% at 100% 0%, oklch(0.78 0.18 155 / 0.22) 0%, transparent 55%), radial-gradient(120% 120% at 0% 100%, oklch(0.65 0.2 150 / 0.16) 0%, transparent 55%)"
+                    : "radial-gradient(120% 120% at 100% 0%, oklch(0.68 0.22 22 / 0.22) 0%, transparent 55%), radial-gradient(120% 120% at 0% 100%, oklch(0.58 0.22 25 / 0.16) 0%, transparent 55%)"
+                  : "radial-gradient(120% 120% at 0% 0%, oklch(0.85 0.13 168 / 0.12) 0%, transparent 50%), radial-gradient(120% 120% at 100% 0%, oklch(0.78 0.18 155 / 0.14) 0%, transparent 55%)",
+            }}
+          />
           <div className="relative p-5 sm:p-6">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
-                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-emerald-300">
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest",
+                    !stats || stats.txCount === 0
+                      ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
+                      : isProfit
+                      ? "border-emerald-400/40 bg-emerald-400/15 text-emerald-200"
+                      : "border-rose-400/40 bg-rose-400/15 text-rose-200"
+                  )}
+                >
                   <TrendingUp className="h-3 w-3" /> Profit Bersih
                 </span>
                 <h2 className="num-mono mt-2 text-3xl font-bold leading-tight text-glow sm:text-4xl">
@@ -156,20 +193,20 @@ export default function Home() {
                 </p>
               </div>
 
-              {/* UNTUNG / MERUGI status badge */}
+              {/* Profit / Loss status badge */}
               {stats && stats.txCount > 0 && (
                 <div
                   className={cn(
-                    "flex flex-col items-center gap-0.5 rounded-2xl border px-4 py-2.5",
+                    "flex flex-col items-center gap-0.5 rounded-2xl border px-4 py-2.5 backdrop-blur-md",
                     isProfit
-                      ? "border-emerald-400/40 bg-emerald-400/10"
-                      : "border-rose-400/40 bg-rose-400/10"
+                      ? "border-emerald-400/50 bg-emerald-400/15"
+                      : "border-rose-400/50 bg-rose-400/15"
                   )}
                 >
                   <span
                     className={cn(
-                      "flex items-center gap-1 text-sm font-bold uppercase tracking-widest",
-                      isProfit ? "text-emerald-300 text-glow" : "text-rose-300 text-glow"
+                      "flex items-center gap-1 text-sm font-bold uppercase tracking-widest text-glow",
+                      isProfit ? "text-emerald-300" : "text-rose-300"
                     )}
                   >
                     {isProfit ? (
@@ -177,7 +214,7 @@ export default function Home() {
                     ) : (
                       <TrendingDown className="h-4 w-4" />
                     )}
-                    {isProfit ? "Untung" : "Merugi"}
+                    {isProfit ? "Profit" : "Loss"}
                   </span>
                   <span className="num-mono text-[11px] text-zinc-400">
                     {Math.round(winRate)}% win
