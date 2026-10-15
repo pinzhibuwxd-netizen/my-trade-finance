@@ -3,12 +3,14 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/timeline -> all transactions joined with account name, ascending by date
+// GET /api/timeline -> all transactions joined with account name, ascending by trade time
 export async function GET() {
   const { data, error } = await supabaseAdmin
     .from("transactions")
-    .select("id, account_id, type, amount, note, created_at, accounts!inner(name)")
-    .order("created_at", { ascending: true });
+    .select(
+      "id, account_id, type, amount, note, trade_at, created_at, accounts!inner(name)"
+    )
+    .order("trade_at", { ascending: true });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -21,6 +23,7 @@ export async function GET() {
     type: t.type,
     amount: Number(t.amount),
     note: t.note,
+    trade_at: t.trade_at,
     created_at: t.created_at,
   }));
 

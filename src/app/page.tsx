@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Plus, LineChart, Sparkles, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw, Clock, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SummaryCards } from "@/components/mtf/summary-cards";
@@ -9,6 +9,10 @@ import {
   AreaChartTimeline,
   BarChartAccounts,
   DonutInvestment,
+  PatternByDay,
+  PatternByHour,
+  PatternHeatmap,
+  PatternPrimeBadges,
   type TimelineTx,
 } from "@/components/mtf/charts";
 import { AccountCard } from "@/components/mtf/account-card";
@@ -17,8 +21,12 @@ import { AddTransactionDialog } from "@/components/mtf/add-transaction-dialog";
 import { AccountDetailSheet } from "@/components/mtf/account-detail-sheet";
 import { EmptyState } from "@/components/mtf/empty-state";
 import { useFetch } from "@/components/mtf/use-fetch";
-import type { AccountSummary, DashboardStats, Transaction } from "@/lib/types";
-import { toast } from "sonner";
+import type {
+  AccountSummary,
+  DashboardStats,
+  Patterns,
+  Transaction,
+} from "@/lib/types";
 
 export default function Home() {
   const [addOpen, setAddOpen] = useState(false);
@@ -31,16 +39,17 @@ export default function Home() {
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [detailRefresh, setDetailRefresh] = useState(0);
 
-  // data
   const statsQ = useFetch<DashboardStats>("/api/stats");
   const accountsQ = useFetch<{ accounts: AccountSummary[] }>("/api/accounts");
   const timelineQ = useFetch<{ transactions: TimelineTx[] }>("/api/timeline");
+  const patternsQ = useFetch<Patterns>("/api/patterns");
 
   const reloadAll = useCallback(() => {
     statsQ.refetch();
     accountsQ.refetch();
     timelineQ.refetch();
-  }, [statsQ, accountsQ, timelineQ]);
+    patternsQ.refetch();
+  }, [statsQ, accountsQ, timelineQ, patternsQ]);
 
   const openAdd = () => {
     setEditingAccount(null);
@@ -61,31 +70,33 @@ export default function Home() {
   };
   const openEditTx = (t: Transaction) => {
     setEditingTx(t);
-    setTxTarget(detailAccount ? { id: detailAccount.account_id, name: detailAccount.name } : null);
+    setTxTarget(
+      detailAccount
+        ? { id: detailAccount.account_id, name: detailAccount.name }
+        : null
+    );
     setTxOpen(true);
   };
 
   const stats = statsQ.data;
   const accounts = accountsQ.data?.accounts ?? [];
   const transactions = timelineQ.data?.transactions ?? [];
+  const patterns = patternsQ.data ?? null;
   const loading = statsQ.loading || accountsQ.loading;
 
   return (
-    <div className="flex min-h-screen flex-col bg-tech-grid">
+    <div className="relative min-h-screen bg-tech-grid">
       {/* ===== Header ===== */}
-      <header className="sticky top-0 z-30 border-b border-emerald-100/80 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+      <header className="sticky top-0 z-30 border-b border-white/10 bg-background/70 backdrop-blur-xl">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-2.5">
-            <span className="relative grid h-9 w-9 place-items-center rounded-xl bg-emerald-600 text-white shadow-lg shadow-emerald-600/30">
-              <LineChart className="h-5 w-5" />
+            <span className="glow grid h-9 w-9 place-items-center rounded-xl bg-emerald-500 text-emerald-950">
+              <Sparkles className="h-5 w-5" />
             </span>
             <div className="leading-tight">
-              <h1 className="text-base font-bold tracking-tight text-foreground sm:text-lg">
-                My Trade Finance
+              <h1 className="text-base font-bold tracking-tight text-zinc-50 sm:text-lg">
+                Trade<span className="text-emerald-400">Finance</span>
               </h1>
-              <p className="hidden text-[11px] text-muted-foreground sm:block">
-                Pengelola investasi multi-akun
-              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -94,15 +105,16 @@ export default function Home() {
               size="icon"
               onClick={reloadAll}
               title="Muat ulang"
-              className="border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+              className="border-white/10 bg-transparent text-emerald-300 hover:bg-emerald-400/10"
             >
               <RefreshCw className="h-4 w-4" />
             </Button>
             <Button
               onClick={openAdd}
-              className="bg-emerald-600 text-white hover:bg-emerald-700"
+              className="bg-emerald-500 text-emerald-950 hover:bg-emerald-400"
             >
-              <Plus className="mr-1 h-4 w-4" /> <span className="hidden sm:inline">Tambah Akun</span><span className="sm:hidden">Akun</span>
+              <Plus className="h-4 w-4" />
+              <span className="ml-1 hidden sm:inline">Akun</span>
             </Button>
           </div>
         </div>
@@ -110,29 +122,31 @@ export default function Home() {
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-5 sm:px-6 sm:py-7">
         {/* ===== Hero ===== */}
-        <section className="relative mb-5 overflow-hidden rounded-2xl border border-emerald-200 bg-white">
-          <div className="anime-sheen absolute inset-0" />
+        <section className="glass anime-sheen relative mb-5 overflow-hidden rounded-2xl glow">
           <div className="relative flex items-center gap-4 p-5 sm:p-6">
             <div className="min-w-0 flex-1">
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700">
-                <Sparkles className="h-3 w-3" /> Dashboard Analitik
+              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-emerald-300">
+                <Sparkles className="h-3 w-3" /> Profit Bersih
               </span>
-              <h2 className="mt-2 text-xl font-bold leading-tight text-foreground sm:text-2xl">
-                Profit bersih kamu{" "}
-                <span className={stats && stats.netProfit >= 0 ? "text-emerald-700" : "text-rose-600"}>
-                  {stats ? `${stats.netProfit >= 0 ? "+" : ""}${new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(stats.netProfit)}` : "..."}
+              <h2 className="num-mono mt-2 text-3xl font-bold leading-tight text-glow sm:text-4xl">
+                <span className={stats && stats.netProfit >= 0 ? "text-emerald-300" : "text-rose-300"}>
+                  {stats
+                    ? `${stats.netProfit >= 0 ? "+" : ""}${new Intl.NumberFormat(
+                        "id-ID",
+                        { style: "currency", currency: "IDR", maximumFractionDigits: 0 }
+                      ).format(stats.netProfit)}`
+                    : "···"}
                 </span>
               </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="mt-1 text-xs text-zinc-400">
                 {accounts.length > 0
-                  ? `Tersebar di ${accounts.length} akun dengan ${stats?.txCount ?? 0} transaksi tercatat.`
-                  : "Tambahkan akun pertamamu untuk mulai mencatat transaksi & profit."}
+                  ? `${accounts.length} akun · ${stats?.txCount ?? 0} transaksi`
+                  : "Tambahkan akun pertamamu"}
               </p>
             </div>
-            {/* mascot */}
             <img
               src="/hero-mascot.png"
-              alt="Mascot analisis keuangan"
+              alt="Mascot"
               className="hidden h-28 w-28 shrink-0 rounded-xl object-cover sm:block md:h-36 md:w-36"
             />
           </div>
@@ -154,19 +168,37 @@ export default function Home() {
           <BarChartAccounts accounts={accounts} loading={accountsQ.loading} />
         </section>
 
+        {/* ===== POLA WAKTU (new) ===== */}
+        <section className="mb-7">
+          <div className="mb-3 flex items-center gap-2">
+            <Clock className="h-4 w-4 text-emerald-300" />
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-300">
+              Pola Waktu
+            </h2>
+          </div>
+          <div className="space-y-4">
+            <PatternPrimeBadges patterns={patterns} />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <PatternByDay patterns={patterns} loading={patternsQ.loading} />
+              <PatternByHour patterns={patterns} loading={patternsQ.loading} />
+            </div>
+            <PatternHeatmap patterns={patterns} loading={patternsQ.loading} />
+          </div>
+        </section>
+
         {/* ===== Accounts ===== */}
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-foreground sm:text-lg">
-              Akun Investasi
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-300">
+              Akun
             </h2>
-            <span className="text-xs text-muted-foreground">{accounts.length} akun</span>
+            <span className="num-mono text-xs text-zinc-500">{accounts.length}</span>
           </div>
 
           {accountsQ.loading ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {[...Array(3)].map((_, i) => (
-                <Skeleton key={i} className="h-56 w-full rounded-2xl" />
+                <Skeleton key={i} className="h-56 w-full rounded-2xl bg-white/5" />
               ))}
             </div>
           ) : accounts.length === 0 ? (
@@ -174,7 +206,11 @@ export default function Home() {
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {accounts.map((a) => (
-                <AccountCard key={a.account_id} account={a} onOpenDetail={() => openDetail(a)} />
+                <AccountCard
+                  key={a.account_id}
+                  account={a}
+                  onOpenDetail={() => openDetail(a)}
+                />
               ))}
             </div>
           )}
@@ -182,12 +218,12 @@ export default function Home() {
       </main>
 
       {/* ===== Footer (sticky bottom) ===== */}
-      <footer className="mt-auto border-t border-emerald-100 bg-white/80 backdrop-blur pb-safe">
-        <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-2 px-4 py-3 text-xs text-muted-foreground sm:flex-row sm:px-6">
+      <footer className="mt-auto border-t border-white/10 bg-background/70 backdrop-blur-xl pb-safe">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-2 px-4 py-3 text-xs text-zinc-500 sm:px-6">
           <p>
-            <span className="font-semibold text-emerald-700">My Trade Finance</span> · PWA · Powered by Supabase
+            <span className="font-semibold text-emerald-400">TradeFinance</span> · PWA · Supabase
           </p>
-          <p className="num-mono">{new Date().getFullYear()} · v1.0</p>
+          <p className="num-mono">{new Date().getFullYear()} · v2.0</p>
         </div>
       </footer>
 

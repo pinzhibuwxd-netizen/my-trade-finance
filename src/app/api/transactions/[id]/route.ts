@@ -32,6 +32,10 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   }
   if (body.note !== undefined)
     update.note = body.note ? String(body.note).trim() : null;
+  if (body.trade_at !== undefined) {
+    const d = new Date(body.trade_at);
+    if (Number.isFinite(d.getTime())) update.trade_at = d.toISOString();
+  }
 
   const { data, error } = await supabaseAdmin
     .from("transactions")

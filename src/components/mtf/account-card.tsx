@@ -8,13 +8,10 @@ import {
   TrendingUp,
   TrendingDown,
   Link2,
-  User,
-  KeyRound,
   ChevronRight,
   Copy,
   Check,
 } from "lucide-react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatIDRShort, type AccountSummary } from "@/lib/types";
@@ -33,7 +30,6 @@ export function AccountCard({
 
   const net = Number(account.net_profit || 0);
   const positive = net >= 0;
-
   const masked = (v: string) => (reveal ? v : "••••••••");
 
   const copy = async (field: "id" | "pass", value: string) => {
@@ -55,31 +51,31 @@ export function AccountCard({
   }
 
   return (
-    <Card className="group relative overflow-hidden border-emerald-100 p-4 sm:p-5 transition-all hover:border-emerald-300 hover:shadow-md hover:shadow-emerald-100/60">
-      <div className="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-emerald-400 to-emerald-600" />
+    <div className="glass group relative overflow-hidden rounded-2xl p-4 transition-all hover:border-emerald-400/40 hover:shadow-[0_0_28px_-6px_oklch(0.78_0.18_155_/_0.4)]">
+      {/* glow accent */}
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
 
-      <div className="flex items-start justify-between gap-3 pl-1.5">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-base font-semibold text-foreground">
+          <h3 className="truncate text-base font-semibold text-zinc-50">
             {account.name}
           </h3>
           <a
             href={account.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-0.5 inline-flex items-center gap-1 truncate text-xs text-emerald-700 hover:underline"
+            className="mt-0.5 inline-flex items-center gap-1 truncate text-xs text-emerald-300/80 hover:text-emerald-300"
           >
             <Link2 className="h-3 w-3 shrink-0" />
             <span className="truncate">{host}</span>
           </a>
         </div>
-        <Badge
-          variant="outline"
+        <span
           className={cn(
-            "shrink-0 gap-1 border",
+            "flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium",
             positive
-              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-              : "border-rose-200 bg-rose-50 text-rose-600"
+              ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
+              : "border-rose-400/30 bg-rose-400/10 text-rose-300"
           )}
         >
           {positive ? (
@@ -89,21 +85,21 @@ export function AccountCard({
           )}
           {positive ? "+" : ""}
           {formatIDRShort(net)}
-        </Badge>
+        </span>
       </div>
 
       {/* credentials */}
-      <div className="mt-3 space-y-1.5 pl-1.5">
+      <div className="mt-3 space-y-1.5">
         <div className="flex items-center gap-2 text-xs">
-          <span className="flex w-16 items-center gap-1 text-muted-foreground">
-            <User className="h-3 w-3" /> ID
+          <span className="w-10 shrink-0 text-[10px] uppercase tracking-widest text-zinc-500">
+            ID
           </span>
-          <span className="num-mono flex-1 truncate text-foreground">
+          <span className="num-mono min-w-0 flex-1 truncate text-zinc-200">
             {account.username}
           </span>
           <button
             onClick={() => copy("id", account.username)}
-            className="text-muted-foreground hover:text-emerald-700"
+            className="text-zinc-500 hover:text-emerald-300"
             title="Salin ID"
           >
             {copied === "id" ? (
@@ -114,15 +110,15 @@ export function AccountCard({
           </button>
         </div>
         <div className="flex items-center gap-2 text-xs">
-          <span className="flex w-16 items-center gap-1 text-muted-foreground">
-            <KeyRound className="h-3 w-3" /> Pass
+          <span className="w-10 shrink-0 text-[10px] uppercase tracking-widest text-zinc-500">
+            Pass
           </span>
-          <span className="num-mono flex-1 truncate text-foreground">
+          <span className="num-mono min-w-0 flex-1 truncate text-zinc-200">
             {masked(account.password)}
           </span>
           <button
             onClick={() => copy("pass", account.password)}
-            className="text-muted-foreground hover:text-emerald-700"
+            className="text-zinc-500 hover:text-emerald-300"
             title="Salin Password"
           >
             {copied === "pass" ? (
@@ -133,7 +129,7 @@ export function AccountCard({
           </button>
           <button
             onClick={() => setReveal((v) => !v)}
-            className="text-muted-foreground hover:text-emerald-700"
+            className="text-zinc-500 hover:text-emerald-300"
             title={reveal ? "Sembunyikan" : "Tampilkan"}
           >
             {reveal ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -141,8 +137,8 @@ export function AccountCard({
         </div>
       </div>
 
-      {/* financial summary */}
-      <div className="mt-3 grid grid-cols-3 gap-2 pl-1.5">
+      {/* mini summary */}
+      <div className="mt-3 grid grid-cols-3 gap-2">
         <Mini label="Modal" value={formatIDRShort(Number(account.total_invested || 0))} />
         <Mini label="Profit" value={formatIDRShort(Number(account.total_profit || 0))} />
         <Mini
@@ -153,50 +149,47 @@ export function AccountCard({
       </div>
 
       {/* actions */}
-      <div className="mt-3 flex items-center gap-2 pl-1.5">
+      <div className="mt-3 flex items-center gap-2">
         <a href={account.link} target="_blank" rel="noopener noreferrer" className="flex-1">
           <Button
             size="sm"
-            className="w-full bg-emerald-600 text-white hover:bg-emerald-700"
+            className="w-full bg-emerald-500 text-emerald-950 hover:bg-emerald-400"
           >
-            <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-            Buka Website
+            <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Buka
           </Button>
         </a>
         <Button
           size="sm"
           variant="outline"
           onClick={onOpenDetail}
-          className="border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+          className="border-emerald-400/30 bg-white/5 text-emerald-300 hover:bg-emerald-400/10 hover:text-emerald-200"
         >
           Detail
           <ChevronRight className="ml-1 h-3.5 w-3.5" />
         </Button>
       </div>
-    </Card>
+    </div>
   );
 }
 
 function Mini({
   label,
   value,
-  tone = "neutral",
+  tone = "muted",
 }: {
   label: string;
   value: string;
-  tone?: "neutral" | "green" | "red";
+  tone?: "muted" | "green" | "red";
 }) {
   return (
-    <div className="rounded-lg bg-muted/60 px-2 py-1.5">
-      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-        {label}
-      </p>
+    <div className="rounded-lg border border-white/5 bg-white/5 px-2 py-1.5">
+      <p className="text-[9px] uppercase tracking-widest text-zinc-500">{label}</p>
       <p
         className={cn(
           "num-mono text-xs font-semibold",
-          tone === "green" && "text-emerald-700",
-          tone === "red" && "text-rose-600",
-          tone === "neutral" && "text-foreground"
+          tone === "green" && "text-emerald-300",
+          tone === "red" && "text-rose-300",
+          tone === "muted" && "text-zinc-200"
         )}
       >
         {value}

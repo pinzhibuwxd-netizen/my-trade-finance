@@ -3,7 +3,6 @@
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -34,8 +33,7 @@ export function AddAccountDialog({
   const isEdit = !!account;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        {/* key remounts the form whenever the target changes so useState initializers re-run */}
+      <DialogContent className="glass-strong rounded-2xl border-emerald-400/20">
         <AccountForm
           key={account?.account_id ?? "new"}
           initial={account}
@@ -103,82 +101,91 @@ function AccountForm({
     onSaved();
   };
 
+  const fieldCls = "border-white/10 bg-white/5";
+
   return (
     <>
       <DialogHeader>
-        <DialogTitle className="flex items-center gap-2 text-emerald-800">
+        <DialogTitle className="flex items-center gap-2 text-emerald-300">
           {isEdit ? <Pencil className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-          {isEdit ? "Edit Akun" : "Tambah Akun Investasi"}
+          {isEdit ? "Edit Akun" : "Tambah Akun"}
         </DialogTitle>
-        <DialogDescription>
-          Catat kredensial website investasi kamu. Semua tersimpan aman di database Supabase.
-        </DialogDescription>
       </DialogHeader>
 
       <div className="space-y-3">
         <div className="space-y-1.5">
-          <Label htmlFor="acc-name">Nama Akun / Website</Label>
+          <Label htmlFor="acc-name" className="text-zinc-400">Nama</Label>
           <Input
             id="acc-name"
-            placeholder="mis. Binomo, Quotex, Olymp Trade"
+            placeholder="mis. Quotex"
             value={form.name}
             onChange={set("name")}
+            className={fieldCls}
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="acc-link">Link Website</Label>
+          <Label htmlFor="acc-link" className="text-zinc-400">Link</Label>
           <Input
             id="acc-link"
-            placeholder="https://contoh-investasi.com"
+            placeholder="https://..."
             inputMode="url"
             value={form.link}
             onChange={set("link")}
+            className={fieldCls}
           />
         </div>
-        <div className="grid grid-cols-1 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor="acc-user">ID / Username</Label>
+            <Label htmlFor="acc-user" className="text-zinc-400">ID</Label>
             <Input
               id="acc-user"
-              placeholder="email atau username"
+              placeholder="username"
               value={form.username}
               onChange={set("username")}
+              className={fieldCls}
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="acc-pass">Password</Label>
+            <Label htmlFor="acc-pass" className="text-zinc-400">Password</Label>
             <Input
               id="acc-pass"
               type="text"
               placeholder="••••••••"
               value={form.password}
               onChange={set("password")}
+              className={fieldCls}
             />
           </div>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="acc-notes">Catatan (opsional)</Label>
+          <Label htmlFor="acc-notes" className="text-zinc-400">Catatan</Label>
           <Textarea
             id="acc-notes"
-            placeholder="mis. total saldo awal, strategi, dsb."
+            placeholder="opsional"
             rows={2}
             value={form.notes}
             onChange={set("notes")}
+            className={fieldCls}
           />
         </div>
       </div>
 
       <DialogFooter>
-        <Button variant="outline" onClick={onDone} disabled={submitting}>
+        <Button
+          variant="outline"
+          onClick={onDone}
+          disabled={submitting}
+          className="border-white/10 bg-transparent text-zinc-300 hover:bg-white/5"
+        >
           Batal
         </Button>
         <Button
           onClick={submit}
           disabled={submitting}
-          className="bg-emerald-600 text-white hover:bg-emerald-700"
+          className="bg-emerald-500 text-emerald-950 hover:bg-emerald-400"
         >
           {submitting && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-          {isEdit ? "Simpan Perubahan" : "Tambah Akun"}
+          {isEdit ? "Simpan" : "Tambah"}
         </Button>
       </DialogFooter>
     </>

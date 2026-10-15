@@ -63,6 +63,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
       type,
       amount: amt,
       note: note ? String(note).trim() : null,
+      trade_at: body.trade_at ? new Date(body.trade_at).toISOString() : new Date().toISOString(),
     })
     .select()
     .single();

@@ -17,6 +17,7 @@ export interface Transaction {
   type: TransactionType;
   amount: number;
   note: string | null;
+  trade_at: string;
   created_at: string;
 }
 
@@ -72,4 +73,74 @@ export function formatIDRShort(n: number): string {
   if (abs >= 1_000_000) return `${sign}Rp ${(abs / 1_000_000).toFixed(2)}jt`;
   if (abs >= 1_000) return `${sign}Rp ${(abs / 1_000).toFixed(1)}rb`;
   return `${sign}Rp ${abs}`;
+}
+
+export interface DayPattern {
+  day_index: number; // 0=Sun..6=Sat
+  day_name: string;
+  total_invested: number;
+  total_profit: number;
+  net: number;
+  count: number;
+  profit_count: number;
+}
+
+export interface HourPattern {
+  hour: number; // 0..23
+  total_invested: number;
+  total_profit: number;
+  net: number;
+  count: number;
+  profit_count: number;
+}
+
+export interface DayHourCell {
+  day_index: number;
+  hour: number;
+  net: number;
+  count: number;
+}
+
+export interface Patterns {
+  byDay: DayPattern[];
+  byHour: HourPattern[];
+  heatmap: DayHourCell[];
+  prime: {
+    day_index: number | null;
+    day_name: string | null;
+    hour: number | null;
+    net: number;
+    count: number;
+  } | null;
+  primeDay: {
+    day_index: number | null;
+    day_name: string | null;
+    net: number;
+  } | null;
+  primeHour: {
+    hour: number | null;
+    net: number;
+  } | null;
+}
+
+export const DAY_NAMES = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+export const DAY_NAMES_FULL = [
+  "Minggu",
+  "Senin",
+  "Selasa",
+  "Rabu",
+  "Kamis",
+  "Jumat",
+  "Sabtu",
+];
+
+export interface TimelineTx {
+  id: string;
+  account_id: string;
+  account_name: string;
+  type: TransactionType;
+  amount: number;
+  note: string | null;
+  trade_at: string;
+  created_at: string;
 }
