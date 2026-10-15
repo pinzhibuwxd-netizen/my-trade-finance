@@ -144,11 +144,6 @@ export default function Home() {
                   : "Tambahkan akun pertamamu"}
               </p>
             </div>
-            <img
-              src="/hero-mascot.png"
-              alt="Mascot"
-              className="hidden h-28 w-28 shrink-0 rounded-xl object-cover sm:block md:h-36 md:w-36"
-            />
           </div>
         </section>
 
